@@ -184,7 +184,9 @@ Scanning and reviewing works without one. But to save data to your Terminal 3 va
 
 A field is marked verified only by a deterministic check like these. The benchmark fails CI if any verified field is wrong.
 
-## Safety and security features (everything is open-sourced and verifiable, it is your responsibility to check through and ensure it is safe enough for your use)
+## Safety and security features
+
+Everything below is open source and verifiable. Check it yourself before you rely on it; see [Disclaimer](#disclaimer).
 
 | Feature | How it's enforced |
 |---|---|
@@ -239,6 +241,17 @@ pnpm build && pnpm test:e2e   # production build + privacy e2e tests
 ```
 
 Host your own copy: [deploy/README.md](deploy/README.md). How the scanner talks to T3N: [docs/integration-t3.md](docs/integration-t3.md).
+
+## Disclaimer
+
+Private Doc Scanner is open-source reference software. It is provided "as is", without warranties or conditions of any kind, as set out in sections 7 and 8 of the [Apache-2.0 licence](LICENSE).
+
+- **You are responsible for your use of it.** Before you use it with real documents or in production, review, test and, where appropriate, independently audit the code, its dependencies and your deployment to make sure they are safe and suitable for your purposes.
+- **Results can be wrong.** On-device reading and the checks it runs reduce errors; they do not remove them. Always review extracted values before you seal or rely on them.
+- **Your deployment, your obligations.** Whoever hosts or runs the scanner is responsible for its configuration, for keeping API keys and secrets safe, and for complying with the data-protection, privacy and other laws that apply to them and their users. Nothing in this repository is legal, compliance or security advice.
+- **Fork it and make it your own.** You may use, modify and redistribute the code under the licence. Changes you make, and the copies you run, are yours to maintain and secure.
+
+Terminal 3 and the contributors are not liable for any loss or damage arising from the use of this software, to the extent permitted by applicable law. Report vulnerabilities as described in [SECURITY.md](SECURITY.md).
 
 ## Licence
 
