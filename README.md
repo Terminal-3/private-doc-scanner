@@ -146,12 +146,13 @@ The same prompts work in Codex. The repo's own [`CLAUDE.md`](CLAUDE.md), [`AGENT
 
 ## Next: book a flight with your sealed passport
 
-Congratulations on sealing your passport in your vault! You can also clone a separate contract that lets
-your AI agent book flights for you without it ever seeing your passport details.
-[Learn more](https://github.com/Terminal-3/travel-booking).
+Congratulations on sealing your passport in your vault! Next, add
+[z-tenant-flight](https://github.com/Terminal-3/z-tenant-flight) to the same Terminal 3 account: a separate
+contract that lets your AI agent book flights through Duffel (test mode) without ever seeing who is flying.
+Run its setup with `--with-scanner` and it can use the passport you scanned here; or skip the scanner and
+save your own traveller record in the format its README gives.
 
-> **Note:** using it allows your passport details to be sent to the travel booking service you choose
-> (not to the AI agent).
+> **Note:** using it sends your passport details to the travel booking service (Duffel), not to the AI agent.
 
 ## FAQ
 
