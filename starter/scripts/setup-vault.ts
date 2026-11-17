@@ -4,6 +4,8 @@
  * readable and writable only by that contract. Safe to run again.
  *
  *   npx tsx scripts/setup-vault.ts
+ *   npx tsx scripts/setup-vault.ts --reregister   re-register the same contract one patch version up,
+ *                                                  to recover a vault whose contract id was never recorded
  *
  * Cost on testnet: about 1,000 credits to register + 50 per map, from your account.
  */
@@ -47,28 +49,51 @@ const mapsPresent = async () => {
  */
 const ID_FILE = new URL("../vault/doc-intake.local.json", import.meta.url);
 const ID_KEY = "contract_id";
-const writeIdFile = (contractId: number) =>
-  writeFile(ID_FILE, JSON.stringify({ name, version: manifest.version, contract_id: contractId }, null, 2) + "\n");
+const writeIdFile = (contractId: number, version: string) =>
+  writeFile(ID_FILE, JSON.stringify({ name, version, contract_id: contractId }, null, 2) + "\n");
 
-if (registered === manifest.version && (await mapsPresent())) {
+/** Compare dotted numeric versions ("0.1.10" > "0.1.9"). */
+const compareVersions = (a: string, b: string) => {
+  const pa = a.split(".").map(Number);
+  const pb = b.split(".").map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const d = (pa[i] ?? 0) - (pb[i] ?? 0);
+    if (d !== 0) return Math.sign(d);
+  }
+  return 0;
+};
+const nextPatch = (v: string) => {
+  const [major = 0, minor = 0, patch = 0] = v.split(".").map(Number);
+  return `${major}.${minor}.${patch + 1}`;
+};
+
+const reregister = process.argv.includes("--reregister");
+// A vault at this version or newer (e.g. set up by the scanner app or an earlier kit) is already set up.
+// Registering the manifest's version over a newer one would fail with "version … is not higher than …".
+const upToDate = registered !== null && compareVersions(registered, manifest.version) >= 0;
+
+if (upToDate && !reregister && (await mapsPresent())) {
   console.log(`✓ already set up: ${name} v${registered} with maps ${manifest.maps.join(", ")}`);
   const haveFile = await access(ID_FILE).then(() => true, () => false);
   if (!haveFile) {
     const stored = await tenant.maps.entryGet("config", ID_KEY).catch(() => null);
     const id = stored ? Number(stored) : NaN;
     if (Number.isInteger(id)) {
-      await writeIdFile(id);
+      await writeIdFile(id, registered ?? manifest.version);
       console.log(`✓ recovered the vault's contract id (${id}) into vault/doc-intake.local.json`);
     } else {
       console.log(
-        "! this vault's contract id wasn't recorded (it was set up before ids were kept). For add-on contracts, bump" +
-          ' "version" in vault/manifest.json and re-run this script: it re-registers the same contract and keeps your data.',
+        "! this vault's contract id wasn't recorded (it was set up before ids were kept). Add-on contracts such as" +
+          " flight booking need it. Run `npx tsx scripts/setup-vault.ts --reregister`: it re-registers the same contract" +
+          ` as v${nextPatch(registered ?? manifest.version)} (about 1,100 credits), keeps your data and records the id.`,
       );
     }
   }
 } else {
-  const reg = await tenant.contracts.register({ tail: manifest.tail, version: manifest.version, wasm });
-  console.log(`✓ registered ${reg.name} v${manifest.version} (contract id ${reg.contract_id})`);
+  // Register the manifest's version, or one patch above what's deployed when that is already as new.
+  const version = registered !== null && compareVersions(registered, manifest.version) >= 0 ? nextPatch(registered) : manifest.version;
+  const reg = await tenant.contracts.register({ tail: manifest.tail, version, wasm });
+  console.log(`✓ registered ${reg.name} v${version} (contract id ${reg.contract_id})`);
   // Private maps: only this contract may read or write them.
   const acl = { writers: { only: [reg.contract_id] }, readers: { only: [reg.contract_id] } };
   for (const tail of manifest.maps) {
@@ -81,7 +106,7 @@ if (registered === manifest.version && (await mapsPresent())) {
       console.log(`✓ map ${tenant.canonicalName(tail)} exists, granted to contract id ${reg.contract_id}`);
     }
   }
-  await writeIdFile(reg.contract_id);
+  await writeIdFile(reg.contract_id, version);
   await tenant.maps.entrySet("config", ID_KEY, String(reg.contract_id)).catch((err: unknown) => {
     console.log(`! couldn't keep the contract id in the vault's config map (${(err as Error).message}); the local file has it`);
   });

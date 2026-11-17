@@ -34,7 +34,7 @@ chat; you never open a terminal.
 
 | Path | What it does |
 |---|---|
-| `scripts/setup-vault.ts` | Verifies `vault/doc-intake.wasm` against its pinned SHA-256, registers it under your DID, creates its private maps. Safe to re-run. |
+| `scripts/setup-vault.ts` | Verifies `vault/doc-intake.wasm` against its pinned SHA-256, registers it under your DID, creates its private maps. Safe to re-run, including over a vault the scanner app or an earlier kit set up at a newer version. `--reregister` re-registers the same contract one patch version up (about 1,100 credits) to recover a vault whose contract id was never recorded. |
 | `scripts/new-link.ts` | Prints a capture link with a fresh, unguessable request id. No key, no network. |
 | `scripts/vault.ts` | `status` / `evaluate` a submission in your vault (no values). |
 | `scripts/read-my-data.ts` | **Prints your private values**: reads one entry of your own vault back, to check what was stored. Run it yourself, never in an AI chat. |
