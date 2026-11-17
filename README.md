@@ -144,6 +144,20 @@ Then ask Claude "set up my private vault" or "store my passport privately".
 
 The same prompts work in Codex. The repo's own [`CLAUDE.md`](CLAUDE.md), [`AGENTS.md`](AGENTS.md) and [skills](.claude/skills) tell coding agents how to use it.
 
+## Build on it (for developers)
+
+If you've followed the [Terminal 3 Get Started guide](https://docs.terminal3.io/developers/adk/get-started/quickstart), this is the walkthrough's private vault with real documents.
+
+- **What it does:** a user scans a passport, ID card, payslip or bank statement on their phone; only the details they review are sealed to their vault, and an agent gets yes/no answers such as "net pay at least 3,000?" or "passport not expired?". It never sees a value.
+- **What it adds to the Get Started setup:** documents read on the device (machine-readable-zone check digits, printed-versus-machine text cross-checks, payslip and statement arithmetic), a review step, and checks re-run inside the enclave. It's a second contract, `z:<tid>:doc-intake`, in the same tenant as the walkthrough's `vault`; grant your organisation agent `evaluate` on it the same way you granted `check`.
+- **What you need:** the same Terminal 3 account (sign in to the scanner with the email you claimed your key with), a phone, and about 1,100 test credits for the vault, once.
+- **Build ideas:**
+  - lending, rental or subscription pre-checks on income and balance, without collecting payslips or statements;
+  - age or residency gating for a service an agent signs the user up to;
+  - booking flights with the scanned passport: [z-tenant-flight](https://github.com/Terminal-3/z-tenant-flight) (below);
+  - your own contract that reads the vault's `intake` map, as z-tenant-flight does for passports.
+- **Docs:** [Private Document Vault](https://docs.terminal3.io/developers/adk/use-cases/private-doc-scanner).
+
 ## Next: book a flight with your sealed passport
 
 Congratulations on sealing your passport in your vault! Next, add
