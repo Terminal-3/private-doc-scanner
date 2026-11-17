@@ -11,7 +11,7 @@ You are helping a developer — possibly a first-timer, possibly vibe-coding —
 
 Ask the user (don't assume):
 1. Do they already have a T3N API key and test credits? If not, point them to the claim page linked from `/developers/adk/get-started/prerequisites/request-test-tokens` on the Terminal 3 docs — it's self-serve, no approval wait.
-2. Will an **AI agent** — not just their own app — be making calls on its own, separately from the code they're writing in this session? (Those calls run through a **contract**: a small program that does the actual work inside a secure enclave, covered in Step 4.) If so, the agent needs its **own** separate key and its **own** test credits — an agent's balance is separate from the developer's own and starts at zero. Get it a second key from the same claim page (revisiting it mints a fresh key+credits each time) rather than reusing the developer's own `T3N_API_KEY` — see `/developers/agents/register-agent`. Reusing the developer's own key or skipping this is the most common cause of `InsufficientCreditError` on agent calls. If the agent belongs to an **organization** rather than being self-registered, the organization can fund it directly from the org's balance, or an admin can fund it from **their own** balance with `fundAgent(agentDid, amount)` (still requires the admin to administer an org the agent belongs to) — see the funding section at `/developers/adk/support/ai-coding-assistants#self-service-agent-credit-funding`.
+2. Will an **AI agent** — not just their own app — be making calls on its own, separately from the code they're writing in this session? (Those calls run through a **contract**: a small program that does the actual work inside a secure enclave, covered in Step 5.) If so, the agent needs its **own** identity and its **own** credits — the agent pays for its own calls, and its balance starts at zero. Create it through the developer's organisation and fund it from the developer's own balance (Step 4) rather than reusing the developer's own `T3N_API_KEY`. Skipping the funding step is the most common cause of `InsufficientCreditError` on agent calls. A self-registered public agent instead gets its own key and credits from the claim page — see `/developers/agents/register-agent`.
 3. Is this a Next.js/Vite/Webpack project? If so, be ready for possible WASM-loading friction — see the troubleshooting note in `/developers/adk/get-started/quickstart`.
 
 ## Step 2: Scaffold the project BEFORE writing the connection code
@@ -68,21 +68,25 @@ Run with `npx tsx quickstart.ts`. Do not proceed to contract code until this pri
 
 **Keep building in this same file.** `t3n` and `tenantDid` are plain JS variables scoped to this one running script. Later snippets (`TenantClient` construction, contract registration, invocation) all assume `t3n`/`tenantDid`/`tenant` are already in scope — append new code to the bottom of `quickstart.ts` rather than starting fresh files, unless you deliberately repeat the connect-and-authenticate block at the top of a new one.
 
-## Step 4: Contract code lives in a SEPARATE project
+## Step 4: Create one organisation for your agents
+
+Agents pay for their own calls, and only an organisation admin can create or fund an agent — so even a solo developer creates one organisation, once (it is **not** idempotent; store the DID). Then create one agent through it, store its `apiKey` (shown once), and fund it from the developer's own balance: `fundAgent(agentDid, toBaseUnits(5))` is 5 credits. Don't pass `initialCredits` — a new organisation's balance is zero. The SDK returns `Did` objects: take `.value`. The developer's tenant and contracts don't move. Full steps: https://docs.terminal3.io/developers/adk/get-started/create-organisation
+
+## Step 5: Contract code lives in a SEPARATE project
 
 The Rust/WASM contract is not part of the Node project above — it's its own crate. Clone the reference implementation instead of hand-typing it, as a sibling folder (not nested inside your Node project):
 
 ```bash
 cd ..
-git clone https://github.com/Terminal-3/z-tenant-flight.git
-cd z-tenant-flight
+git clone https://github.com/Terminal-3/agent-vault-starter.git
+cd agent-vault-starter
 rustup target add wasm32-wasip2   # install rustup first via https://rustup.rs if `rustup`/`cargo` aren't found
 cargo build --target wasm32-wasip2 --release
 ```
 
-This produces `target/wasm32-wasip2/release/z_tenant_flight.wasm`. Back in `my-t3n-app/quickstart.ts` for the registration step, point `WASM_PATH` across the two folders, e.g. `../z-tenant-flight/target/wasm32-wasip2/release/z_tenant_flight.wasm`.
+This produces `target/wasm32-wasip2/release/agent_vault_starter.wasm` — a private customer vault (`store` / `check` / `forget`) that an agent can only ask yes/no questions of. Back in `my-t3n-app/quickstart.ts` for the registration step, point `WASM_PATH` across the two folders, e.g. `../agent-vault-starter/target/wasm32-wasip2/release/agent_vault_starter.wasm`, and create the `vault` map with `readers` and `writers` set to the returned `contract_id`. The org agent then calls `check` with `invoke({ baseUrl, apiKey, request: { …, pii_did } })` after the data owner grants it `check` via `updateMemberDelegation(fanOutGrant({ grantee, contract_id, scopes: [], allowed_hosts: [] }, ["check"]))`.
 
-## Step 5: Known pitfalls — check these BEFORE assuming it's your bug
+## Step 6: Known pitfalls — check these BEFORE assuming it's your bug
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
@@ -92,7 +96,7 @@ This produces `target/wasm32-wasip2/release/z_tenant_flight.wasm`. Back in `my-t
 | Wall of `command not found` / `syntax error near unexpected token` lines, nothing like a TypeScript error | The code block was pasted directly at the shell prompt instead of into a `cat > file << 'EOF'` heredoc — bash tried to run each line as a command | Always write the whole `cat > quickstart.ts << 'EOF' ... EOF` block as one unit, never just the code in between (see Step 3) |
 | `-bash: !: event not found` | Bash history expansion on a bare `!` (TypeScript's non-null assertion, e.g. `T3N_API_KEY!`) — happens both at a raw prompt and inside an unquoted `<< EOF` heredoc | Quote the heredoc delimiter: `<< 'EOF'`, not `<< EOF` |
 | `ReferenceError: tenant is not defined` / `tenantDid is not defined` in a later snippet | Each doc page's code sample assumes earlier variables are still in scope — they aren't, across separate files | Append new code to the same running file instead of starting a new one (see Step 3) |
-| `ENOENT` reading a `.wasm` file | `WASM_PATH` is relative to the wrong project — the contract lives in its own cloned repo, not the Node project | Point `WASM_PATH` across folders, e.g. `../z-tenant-flight/target/...` (see Step 4) |
+| `ENOENT` reading a `.wasm` file | `WASM_PATH` is relative to the wrong project — the contract lives in its own cloned repo, not the Node project | Point `WASM_PATH` across folders, e.g. `../agent-vault-starter/target/...` (see Step 5) |
 | WASM/module parse error, works with `tsx` but not `node`/webpack | Bundler compatibility | Try a plain Node script or server-only route first to isolate the bundler from the SDK |
 | Generic `HTTP 500` with no detail | Could be egress not authorized, wrong action name, or a real platform issue — not necessarily your code | Check the outbound-HTTP-grant requirement below before assuming it's a bug; if it's consistent and reproducible, it may be platform-side |
 | Contract can't reach an external API even though the code looks right | Outbound HTTP is authorized by the **calling user's grant**, not the contract itself | Confirm a user (or self-grant, for direct calls) actually authorized that host via `member-delegation-update` |
@@ -100,9 +104,11 @@ This produces `target/wasm32-wasip2/release/z_tenant_flight.wasm`. Back in `my-t
 | `AccessDenied` reading your own contract's secret | KV map ACLs default to deny | Explicitly set `readers`/`writers` when creating the map |
 | Map path looks right but reads/writes silently miss | `tenant_did()` returns raw bytes and must be hex-encoded once when building the `z:<tid>:` map path | Build the path with `hex::encode(&tenant_did())` — a missing OR double hex-encode both produce a path that matches nothing |
 | Re-registering a tail allocates a new `contract_id` | Explicit pinned versions in `contracts.execute()` are still honored; the real gotcha is map ACLs scoped to the old `contract_id` going stale (there's no API to fetch the current one) | Keep a record of each `contract_id`; pass an explicit version to pin, and re-grant map access after re-registering if needed |
+| Org agent's call fails with `InsufficientCreditError` | A new agent starts at zero, and the agent — not the developer — pays for its calls | `fundAgent(agentDid, toBaseUnits(5))` from the developer's own balance (see Step 4) |
+| React error #31, "object with keys {value}" | An SDK `Did` object was rendered instead of its string | Use `.value` on `createOrganisation()`, `myOrgs()` and `createAgent().agentDid` results |
 | Agent can authenticate but its calls fail with `host/http.egress_denied` | The agent is authenticated but no one has authorized it yet — those are two different steps | The **user (data owner)**, not the agent, must sign a `member-delegation-update` grant naming the agent's DID before it can do anything with outbound HTTP |
 
-## Step 6: Where to look things up
+## Step 7: Where to look things up
 
 - Full onboarding walkthrough, starting point: `/developers/adk/get-started/quickstart`
 - Every confirmed SDK method, host interface, and REST tag: `/developers/adk/reference`
@@ -110,7 +116,7 @@ This produces `target/wasm32-wasip2/release/z_tenant_flight.wasm`. Back in `my-t
 - Conceptual map of the whole ADK: `/developers/adk/overview/adk-tour`
 - Funding an agent's credit balance: `/developers/adk/support/ai-coding-assistants#self-service-agent-credit-funding`
 
-## Step 7: When something seems broken and isn't in this list
+## Step 8: When something seems broken and isn't in this list
 
 Say so plainly to the user rather than guessing. Some rough edges are real platform issues with no clean workaround, not something you can code around. Don't fabricate a fix — point them at the developer Telegram (`https://t.me/terminal3developer`) or `devrel@terminal3.io`.
 

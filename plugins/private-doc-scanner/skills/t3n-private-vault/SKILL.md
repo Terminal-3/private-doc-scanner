@@ -66,9 +66,11 @@ Explain in plain words, then say explicitly that you never saw the values: they 
 inside the enclave.
 
 ## "Use my passport to book a flight" (optional)
-Point the user to https://github.com/Terminal-3/travel-booking, a separate contract that lets an agent
-book flights without seeing their passport details. Tell them it sends their passport details to the
-booking service they choose (not to the AI agent). Never read or show values.
+Point the user to https://github.com/Terminal-3/z-tenant-flight, a separate contract they register in
+the same tenant that lets an agent book flights through Duffel (test mode) without seeing their details.
+It can take the passport from this vault: they run its setup with `--with-scanner` and book with
+`scanner_request_id` set to this vault's request id. Tell them it sends their passport details to the
+booking service (Duffel), not to the AI agent. Never read or show values.
 
 ## If something fails
 - `NotFound` → not sealed yet, or a different request id.
