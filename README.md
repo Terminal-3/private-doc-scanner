@@ -270,6 +270,6 @@ Terminal 3 and the contributors are not liable for any loss or damage arising fr
 
 ## Licence
 
-Apache-2.0. Third-party components are all permissive: pdf.js (Apache-2.0), ONNX Runtime Web (MIT), PaddleOCR models (Apache-2.0), tesseract.js (Apache-2.0), mrz (MIT), lit (BSD-3), uqr (MIT), @hpke/core (MIT), @terminal3/t3n-sdk (MIT).
+The code in this repository is licensed under Apache-2.0: see [LICENSE](LICENSE) and [NOTICE](NOTICE). The T3N host interface definitions in [`contracts/doc-intake/wit/deps/`](contracts/doc-intake/wit/deps/) are Terminal 3's and follow Terminal 3's own licence terms for the T3N platform. Third-party components are all permissive: pdf.js (Apache-2.0), ONNX Runtime Web (MIT), PaddleOCR models (Apache-2.0), tesseract.js (Apache-2.0), mrz (MIT), lit (BSD-3), uqr (MIT), @hpke/core (MIT), @terminal3/t3n-sdk (MIT).
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).

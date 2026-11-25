@@ -1,0 +1,8 @@
+Private Doc Scanner
+Copyright 2026 Terminal 3
+
+The files in contracts/doc-intake/wit/deps/ are the T3N host interface
+definitions (host:interfaces, host:tenant), included from the T3N platform
+so the vault contract can be built. They are not covered by this
+repository's Apache-2.0 licence and remain under Terminal 3's own licence
+terms for the T3N platform.
